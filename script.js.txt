@@ -1,0 +1,155 @@
+// script.js
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = 800;
+canvas.height = 600;
+
+const spaceship = {
+    x: canvas.width / 2 - 25,
+    y: canvas.height - 60,
+    width: 50,
+    height: 50,
+    color: 'blue',
+    speed: 10
+};
+
+let bullets = [];
+let enemies = [];
+let score = 0;
+let gameOver = false;
+
+// Draw spaceship
+function drawSpaceship() {
+    ctx.fillStyle = spaceship.color;
+    ctx.fillRect(spaceship.x, spaceship.y, spaceship.width, spaceship.height);
+}
+
+// Draw bullets
+function drawBullets() {
+    bullets.forEach(bullet => {
+        ctx.fillStyle = 'yellow';
+        ctx.fillRect(bullet.x, bullet.y, 5, 15);
+    });
+}
+
+// Draw enemies
+function drawEnemies() {
+    enemies.forEach(enemy => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(enemy.x, enemy.y, 40, 40);
+    });
+}
+
+// Move spaceship
+function moveSpaceship(direction) {
+    if (direction === 'left' && spaceship.x > 0) {
+        spaceship.x -= spaceship.speed;
+    } else if (direction === 'right' && spaceship.x < canvas.width - spaceship.width) {
+        spaceship.x += spaceship.speed;
+    }
+}
+
+// Fire bullets
+function fireBullet() {
+    bullets.push({
+        x: spaceship.x + spaceship.width / 2 - 2.5,
+        y: spaceship.y,
+        speed: 7
+    });
+}
+
+// Move bullets
+function updateBullets() {
+    bullets.forEach(bullet => {
+        bullet.y -= bullet.speed;
+    });
+    bullets = bullets.filter(bullet => bullet.y > 0);
+}
+
+// Create enemies
+function createEnemy() {
+    const x = Math.random() * (canvas.width - 40);
+    enemies.push({ x, y: 0, speed: 2 });
+}
+
+// Move enemies
+function updateEnemies() {
+    enemies.forEach(enemy => {
+        enemy.y += enemy.speed;
+    });
+    enemies = enemies.filter(enemy => enemy.y < canvas.height);
+}
+
+// Detect collisions
+function detectCollisions() {
+    bullets.forEach((bullet, bIndex) => {
+        enemies.forEach((enemy, eIndex) => {
+            if (
+                bullet.x < enemy.x + 40 &&
+                bullet.x + 5 > enemy.x &&
+                bullet.y < enemy.y + 40 &&
+                bullet.y + 15 > enemy.y
+            ) {
+                bullets.splice(bIndex, 1);
+                enemies.splice(eIndex, 1);
+                score++;
+            }
+        });
+    });
+
+    enemies.forEach(enemy => {
+        if (
+            enemy.x < spaceship.x + spaceship.width &&
+            enemy.x + 40 > spaceship.x &&
+            enemy.y < spaceship.y + spaceship.height &&
+            enemy.y + 40 > spaceship.y
+        ) {
+            gameOver = true;
+        }
+    });
+}
+
+// Display score
+function drawScore() {
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 30);
+}
+
+// Game loop
+function gameLoop() {
+    if (gameOver) {
+        ctx.fillStyle = 'white';
+        ctx.font = '40px Arial';
+        ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+        ctx.fillText(`Score: ${score}`, canvas.width / 2 - 70, canvas.height / 2 + 50);
+        return;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawSpaceship();
+    drawBullets();
+    drawEnemies();
+    drawScore();
+
+    updateBullets();
+    updateEnemies();
+    detectCollisions();
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Event listeners
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') moveSpaceship('left');
+    if (e.key === 'ArrowRight') moveSpaceship('right');
+    if (e.key === ' ') fireBullet();
+});
+
+// Spawn enemies every 1.5 seconds
+setInterval(createEnemy, 1500);
+
+// Start the game loop
+gameLoop();
